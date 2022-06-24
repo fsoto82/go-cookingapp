@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteTargetsManager">
+    <targets>
+      <target name="WSL - Ubuntu" type="wsl" uuid="3a14423e-8441-469d-889c-cfd242cfa7f7">
+        <config>
+          <option name="distributionMsId" value="Ubuntu" />
+          <option name="projectRootOnTarget" value="/d/devel/idea/ide/jbr/bin&#10;/cookingapp" />
+        </config>
+        <ContributedStateBase type="GoLanguageRuntime">
+          <config>
+            <option name="goPath" value="/home/fsoto/go" />
+            <option name="goRoot" value="/home/linuxbrew/.linuxbrew/bin/go" />
+            <option name="goVersion" value="go1.18.3 linux/amd64" />
+          </config>
+        </ContributedStateBase>
+      </target>
+    </targets>
+  </component>
+</project>
