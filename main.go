@@ -5,6 +5,7 @@ import (
 	"github.com/rs/xid"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -29,6 +30,28 @@ type Recipe struct {
 
 func ListRecipesHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, recipes)
+}
+
+func SearchRecipesHandler(c *gin.Context) {
+	tag := c.Query("tag")
+	listOfRecipes := make([]Recipe, 0)
+
+	for _, r := range recipes {
+		found := false
+		for _, t := range r.Tags {
+			if strings.EqualFold(t, tag) {
+				found = true
+			}
+		}
+		if found {
+			listOfRecipes = append(listOfRecipes, r)
+		}
+	}
+	if len(listOfRecipes) > 0 {
+		c.JSON(http.StatusOK, listOfRecipes)
+	} else {
+		c.JSON(http.StatusNotFound, gin.H{})
+	}
 }
 
 func NewRecipeHandler(c *gin.Context) {
@@ -79,6 +102,7 @@ func DeleteRecipeHandler(c *gin.Context) {
 func main() {
 	router := gin.Default()
 	router.GET("/recipes", ListRecipesHandler)
+	router.GET("/recipes/search", SearchRecipesHandler)
 	router.POST("/recipes", NewRecipeHandler)
 	router.PUT("/recipes/:id", UpdateRecipeHandler)
 	router.DELETE("/recipes/:id", DeleteRecipeHandler)
