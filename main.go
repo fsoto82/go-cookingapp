@@ -73,12 +73,28 @@ func loadData(ctx context.Context, collection *mongo.Collection) {
 	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 }
 
+func AuthMiddleWare(key string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetHeader("X-API-KEY") != key {
+			c.AbortWithStatus(401)
+		}
+		c.Next()
+	}
+}
+
 func main() {
 	router := gin.Default()
-	router.GET("/recipes", recipesHandler.ListRecipesHandler)
-	router.GET("/recipes/search", recipesHandler.SearchRecipesHandler)
-	router.POST("/recipes", recipesHandler.NewRecipeHandler)
-	router.PUT("/recipes/:id", recipesHandler.UpdateRecipeHandler)
-	router.DELETE("/recipes/:id", recipesHandler.DeleteRecipeHandler)
+	recipes := router.Group("/recipes")
+	{
+		recipes.GET("", recipesHandler.ListRecipesHandler)
+		recipes.GET("/search", recipesHandler.SearchRecipesHandler)
+		authorized := recipes.Group("")
+		authorized.Use(AuthMiddleWare(os.Getenv("X_API_KEY")))
+		{
+			authorized.POST("", recipesHandler.NewRecipeHandler)
+			authorized.PUT("/:id", recipesHandler.UpdateRecipeHandler)
+			authorized.DELETE("/:id", recipesHandler.DeleteRecipeHandler)
+		}
+	}
 	router.Run()
 }
