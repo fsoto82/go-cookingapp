@@ -60,21 +60,6 @@ func init() {
 	//loadData(ctx, collection)
 }
 
-func loadData(ctx context.Context, collection *mongo.Collection) {
-	recipes := make([]models.Recipe, 0)
-	file, _ := ioutil.ReadFile("recipes.json")
-	_ = json.Unmarshal(file, &recipes)
-	var listOfRecipes []interface{}
-	for _, recipe := range recipes {
-		listOfRecipes = append(listOfRecipes, recipe)
-	}
-	insertManyResult, err := collection.InsertMany(ctx, listOfRecipes)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
-}
-
 func main() {
 	router := gin.Default()
 	//router.POST("/signin", authHandler.SignInHandler)
@@ -92,4 +77,19 @@ func main() {
 		}
 	}
 	router.Run()
+}
+
+func loadData(ctx context.Context, collection *mongo.Collection) {
+	recipes := make([]models.Recipe, 0)
+	file, _ := ioutil.ReadFile("recipes.json")
+	_ = json.Unmarshal(file, &recipes)
+	var listOfRecipes []interface{}
+	for _, recipe := range recipes {
+		listOfRecipes = append(listOfRecipes, recipe)
+	}
+	insertManyResult, err := collection.InsertMany(ctx, listOfRecipes)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 }
