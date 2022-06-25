@@ -3,9 +3,12 @@ module cookingapp
 go 1.18
 
 require (
+	github.com/auth0-community/go-auth0 v1.0.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/golang-jwt/jwt/v4 v4.4.2
 	go.mongodb.org/mongo-driver v1.9.1
+	gopkg.in/square/go-jose.v2 v2.6.0
 )
 
 require (
@@ -17,7 +20,6 @@ require (
 	github.com/go-playground/validator/v10 v10.10.0 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/goccy/go-json v0.9.7 // indirect
-	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect

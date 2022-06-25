@@ -1,17 +1,20 @@
 package handlers
 
 import (
-	"cookingapp/models"
+	"fmt"
+	"github.com/auth0-community/go-auth0"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"gopkg.in/square/go-jose.v2"
 	"log"
 	"net/http"
 	"time"
 )
 
 type AuthHandler struct {
-	JwtSecret     string
-	SigningMethod *jwt.SigningMethodHMAC
+	auth0Client   *auth0.JWKClient
+	configuration auth0.Configuration
+	validator     *auth0.JWTValidator
 }
 
 type Claims struct {
@@ -24,27 +27,30 @@ type JWTOutput struct {
 	Expires time.Time `json:"expires"`
 }
 
-func NewAuthHandler(jwtSecret string, signingMethod *jwt.SigningMethodHMAC) *AuthHandler {
-	return &AuthHandler{JwtSecret: jwtSecret, SigningMethod: signingMethod}
+func NewAuthHandler(auth0Domain, apiId string) *AuthHandler {
+	fullDomain := fmt.Sprintf("https://%s/", auth0Domain)
+	auth0Client := auth0.NewJWKClient(auth0.JWKClientOptions{URI: fullDomain + ".well-known/jwks.json"}, nil)
+	configuration := auth0.NewConfiguration(auth0Client, []string{apiId}, fullDomain, jose.RS256)
+	return &AuthHandler{
+		auth0Client:   auth0Client,
+		configuration: configuration,
+		validator:     auth0.NewValidator(configuration, nil),
+	}
 }
 
 func (handler *AuthHandler) AuthMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenValue := c.GetHeader("Authorization")
-		claims := &Claims{}
-		tkn, err := jwt.ParseWithClaims(tokenValue, claims, func(token *jwt.Token) (interface{}, error) {
-			return []byte(handler.JwtSecret), nil
-		})
+		_, err := handler.validator.ValidateRequest(c.Request)
 		if err != nil {
+			log.Println("Invalid token: ", err)
 			c.AbortWithStatus(http.StatusUnauthorized)
-		}
-		if tkn == nil || !tkn.Valid {
-			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 		c.Next()
 	}
 }
 
+/*
 func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 	var user models.User
 	if err := c.ShouldBindJSON(&user); err != nil {
@@ -64,8 +70,8 @@ func (handler *AuthHandler) SignInHandler(c *gin.Context) {
 		},
 	}
 
-	token := jwt.NewWithClaims(handler.SigningMethod, claims)
-	tokenString, err := token.SignedString(handler.JwtSecret)
+	token := jwt.NewWithClaims(handler.signingMethod, claims)
+	tokenString, err := token.SignedString(handler.jwtSecret)
 	if err != nil {
 		log.Println("Error tokenizing: ", err)
 		c.Status(http.StatusBadRequest)
@@ -83,7 +89,7 @@ func (handler *AuthHandler) RefreshHandler(c *gin.Context) {
 	tokenValue := c.GetHeader("Authorization")
 	claims := &Claims{}
 	tkn, err := jwt.ParseWithClaims(tokenValue, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(handler.JwtSecret), nil
+		return []byte(handler.jwtSecret), nil
 	})
 	if err != nil {
 		log.Println("Error parsing claims: ", err)
@@ -103,8 +109,8 @@ func (handler *AuthHandler) RefreshHandler(c *gin.Context) {
 
 	expirationTime := time.Now().Add(5 * time.Minute)
 	claims.ExpiresAt = &jwt.NumericDate{Time: expirationTime}
-	token := jwt.NewWithClaims(handler.SigningMethod, claims)
-	tokenString, err := token.SignedString(handler.JwtSecret)
+	token := jwt.NewWithClaims(handler.signingMethod, claims)
+	tokenString, err := token.SignedString(handler.jwtSecret)
 	if err != nil {
 		log.Println("Error tokenizing: ", err)
 		c.Status(http.StatusBadRequest)
@@ -117,3 +123,4 @@ func (handler *AuthHandler) RefreshHandler(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, jwtOutput)
 }
+*/

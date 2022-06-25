@@ -22,7 +22,6 @@ import (
 	"cookingapp/handlers"
 	"cookingapp/models"
 	"encoding/json"
-	"github.com/golang-jwt/jwt/v4"
 	"io/ioutil"
 	"log"
 	"os"
@@ -57,7 +56,7 @@ func init() {
 	log.Println("Connected to MongoDB!!!")
 	recipesHandler = handlers.NewRecipesHandler(ctx, collection, redisClient)
 
-	authHandler = handlers.NewAuthHandler(os.Getenv("JWT_SECRET"), jwt.SigningMethodHS256)
+	authHandler = handlers.NewAuthHandler(os.Getenv("AUTH0_DOMAIN"), os.Getenv("AUTH0_API_IDENTIFIER"))
 	//loadData(ctx, collection)
 }
 
@@ -78,15 +77,15 @@ func loadData(ctx context.Context, collection *mongo.Collection) {
 
 func main() {
 	router := gin.Default()
-	router.POST("/signin", authHandler.SignInHandler)
-	router.POST("/refresh", authHandler.RefreshHandler)
+	//router.POST("/signin", authHandler.SignInHandler)
+	//router.POST("/refresh", authHandler.RefreshHandler)
 	recipes := router.Group("/recipes")
 	{
-		recipes.GET("", recipesHandler.ListRecipesHandler)
-		recipes.GET("/search", recipesHandler.SearchRecipesHandler)
 		authorized := recipes.Group("")
 		authorized.Use(authHandler.AuthMiddleWare())
 		{
+			authorized.GET("", recipesHandler.ListRecipesHandler)
+			authorized.GET("/search", recipesHandler.SearchRecipesHandler)
 			authorized.POST("", recipesHandler.NewRecipeHandler)
 			authorized.PUT("/:id", recipesHandler.UpdateRecipeHandler)
 			authorized.DELETE("/:id", recipesHandler.DeleteRecipeHandler)
