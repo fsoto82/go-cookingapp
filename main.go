@@ -22,6 +22,7 @@ import (
 	"cookingapp/handlers"
 	"cookingapp/models"
 	"encoding/json"
+	"github.com/golang-jwt/jwt/v4"
 	"io/ioutil"
 	"log"
 	"os"
@@ -34,6 +35,7 @@ import (
 )
 
 var recipesHandler *handlers.RecipesHandler
+var authHandler *handlers.AuthHandler
 
 func init() {
 	ctx := context.Background()
@@ -55,6 +57,7 @@ func init() {
 	log.Println("Connected to MongoDB!!!")
 	recipesHandler = handlers.NewRecipesHandler(ctx, collection, redisClient)
 
+	authHandler = handlers.NewAuthHandler(os.Getenv("JWT_SECRET"), jwt.SigningMethodHS256)
 	//loadData(ctx, collection)
 }
 
@@ -73,23 +76,16 @@ func loadData(ctx context.Context, collection *mongo.Collection) {
 	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
 }
 
-func AuthMiddleWare(key string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		if c.GetHeader("X-API-KEY") != key {
-			c.AbortWithStatus(401)
-		}
-		c.Next()
-	}
-}
-
 func main() {
 	router := gin.Default()
+	router.POST("/signin", authHandler.SignInHandler)
+	router.POST("/refresh", authHandler.RefreshHandler)
 	recipes := router.Group("/recipes")
 	{
 		recipes.GET("", recipesHandler.ListRecipesHandler)
 		recipes.GET("/search", recipesHandler.SearchRecipesHandler)
 		authorized := recipes.Group("")
-		authorized.Use(AuthMiddleWare(os.Getenv("X_API_KEY")))
+		authorized.Use(authHandler.AuthMiddleWare())
 		{
 			authorized.POST("", recipesHandler.NewRecipeHandler)
 			authorized.PUT("/:id", recipesHandler.UpdateRecipeHandler)
