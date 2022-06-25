@@ -215,5 +215,9 @@ func (handler *RecipesHandler) DeleteRecipeHandler(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Recipe not found"})
 		return
 	}
+
+	log.Println("Remove data from Redis")
+	handler.redisClient.Del(handler.ctx, "recipes")
+
 	c.JSON(http.StatusAccepted, gin.H{"message": "Recipe deleted"})
 }
