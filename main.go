@@ -22,19 +22,29 @@ import (
 	"cookingapp/handlers"
 	"cookingapp/models"
 	"encoding/json"
-	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"io/ioutil"
 	"log"
 	"os"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 var recipesHandler *handlers.RecipesHandler
 
 func init() {
 	ctx := context.Background()
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+	redisStatus := redisClient.Ping(ctx)
+	log.Println("Redis status: ", redisStatus)
+
 	client, err := mongo.Connect(ctx,
 		options.Client().ApplyURI(os.Getenv("MONGO_URI")))
 	if err = client.Ping(context.TODO(),
@@ -43,7 +53,7 @@ func init() {
 	}
 	collection := client.Database(os.Getenv("MONGO_DATABASE")).Collection("recipes")
 	log.Println("Connected to MongoDB!!!")
-	recipesHandler = handlers.NewRecipesHandler(ctx, collection)
+	recipesHandler = handlers.NewRecipesHandler(ctx, collection, redisClient)
 
 	//loadData(ctx, collection)
 }
